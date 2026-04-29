@@ -1,0 +1,12 @@
+#!/bin/bash
+# 커밋 완료 후 로그 기록
+
+mkdir -p ~/.claude/logs
+
+COMMIT_HASH=$(git rev-parse --short HEAD)
+COMMIT_MSG=$(git log -1 --pretty=%s)
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$TIMESTAMP] ✅ $COMMIT_HASH — $COMMIT_MSG" >> ~/.claude/logs/git-changes.txt
+
+echo "✅ 커밋 완료: $COMMIT_HASH — $COMMIT_MSG"

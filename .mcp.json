@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "db-schema": {
+      "type": "sse",
+      "url": "https://annually-right-helena-disclaimer.trycloudflare.com/sse"
+    },
+    "business-logic": {
+      "type": "sse",
+      "url": "https://raised-doing-increase-creating.trycloudflare.com/sse"
+    },
+    "api-endpoints": {
+      "type": "sse",
+      "url": "https://subscribe-hosted-hospitals-opera.trycloudflare.com/sse"
+    }
+  }
+}

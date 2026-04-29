@@ -1,0 +1,21 @@
+#!/bin/bash
+# 커밋 메시지 컨벤션 검사
+# 허용 형식: feat|fix|docs|style|refactor|test|chore: 메시지
+
+COMMIT_MSG=$(cat "$1")
+PATTERN="^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .+"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo "❌ [commit-msg] 커밋 메시지 형식 오류"
+  echo ""
+  echo "허용 형식: <type>: <메시지>"
+  echo "예시:"
+  echo "  feat: 로그인 기능 추가"
+  echo "  fix: 토큰 만료 버그 수정"
+  echo "  docs: README 업데이트"
+  echo ""
+  echo "현재 메시지: \"$COMMIT_MSG\""
+  exit 1
+fi
+
+exit 0
