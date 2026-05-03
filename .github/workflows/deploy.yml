@@ -1,8 +1,10 @@
-name: Deploy to ECS
+name: Deploy Backend to ECS
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
 
 permissions:
   id-token: write
@@ -14,13 +16,9 @@ env:
   ECS_CLUSTER: mcp-agents-staging-cluster
 
 jobs:
-  deploy-mcp-servers:
-    name: MCP 서버 배포
+  deploy-user-service:
+    name: user-service 배포
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        service: [db-schema, business-logic, api-endpoints]
 
     steps:
       - name: 코드 체크아웃
@@ -37,16 +35,16 @@ jobs:
 
       - name: Docker 빌드 & ECR 푸시
         run: |
-          IMAGE=${{ env.ECR_BASE }}/mcp-agents-staging-${{ matrix.service }}:latest
+          IMAGE=${{ env.ECR_BASE }}/mcp-agents-staging-user-service:latest
           docker build --platform linux/amd64 \
             -t $IMAGE \
-            ./mcp-servers/${{ matrix.service }}
+            ./backend/user-service
           docker push $IMAGE
 
       - name: ECS 재배포
         run: |
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
-            --service mcp-agents-staging-${{ matrix.service }} \
+            --service mcp-agents-staging-user-service \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
