@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import { JwtAccessPayload } from './types/jwt-payload.type';
 import { UserEntity } from './entities/user.entity';
@@ -14,13 +14,12 @@ import { UserEntity } from './entities/user.entity';
  * 처리 순서:
  *  1. Authorization: Bearer <token> 헤더에서 AT 추출
  *  2. JWT_ACCESS_SECRET으로 서명/만료 검증 (passport-jwt 자동 처리)
- *  3. validate() 호출: payload.type === 'access' 확인
+ *  3. validate(): payload.type === 'access' 타입 확인
  *  4. payload.sub로 유저 조회 — 삭제/비활성 계정이면 401
  *  5. req.user에 { userId, email } 주입
  *
- * JwtAuthGuard가 이 전략을 사용한다.
- * Refresh Token은 별도 전략(JwtRefreshStrategy) 없이
- * AuthService.refresh() 내부에서 직접 verify한다.
+ * Refresh Token은 별도 전략 없이 AuthService.refresh() 내부에서
+ * refresh_tokens 테이블 조회로 직접 검증한다.
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
