@@ -3,7 +3,7 @@ name: build-feature
 description: 기능명을 받아 db-schema / business-logic / api-endpoints 에이전트를 동시에 실행하고 결과를 nestjs-generator에게 전달해 실제 NestJS 파일을 생성한다. "build-feature 유저 로그인", "기능 만들어줘" 같은 요청 시 사용.
 ---
 
-사용자가 기능명을 주면 아래 순서로 실행한다..
+사용자가 기능명을 주면 아래 순서로 실행한다
 
 ## 실행 순서
 
