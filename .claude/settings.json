@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/pinetech/Desktop/version_claude/v1/.claude/hooks/log-prompt.sh",
+            "async": true,
+            "statusMessage": "프롬프트 로깅 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

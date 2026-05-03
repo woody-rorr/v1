@@ -1,16 +1,25 @@
 {
   "mcpServers": {
     "db-schema": {
-      "type": "sse",
-      "url": "https://annually-right-helena-disclaimer.trycloudflare.com/sse"
+      "type": "http",
+      "url": "http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5001/mcp",
+      "headers": {
+        "x-user-id": "woody@rorr.club"
+      }
     },
     "business-logic": {
-      "type": "sse",
-      "url": "https://raised-doing-increase-creating.trycloudflare.com/sse"
+      "type": "http",
+      "url": "http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5002/mcp",
+      "headers": {
+        "x-user-id": "woody@rorr.club"
+      }
     },
     "api-endpoints": {
-      "type": "sse",
-      "url": "https://subscribe-hosted-hospitals-opera.trycloudflare.com/sse"
+      "type": "http",
+      "url": "http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5003/mcp",
+      "headers": {
+        "x-user-id": "woody@rorr.club"
+      }
     }
   }
 }
