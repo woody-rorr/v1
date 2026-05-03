@@ -1,0 +1,62 @@
+name: Deploy MCP Servers to ECS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mcp-servers/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_BASE: 239460481239.dkr.ecr.us-east-1.amazonaws.com
+  ECS_CLUSTER: mcp-agents-staging-cluster
+
+jobs:
+  deploy-mcp:
+    name: MCP 서버 배포
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: db-schema
+            ecr: mcp-agents-staging-db-schema
+            ecs: mcp-agents-staging-db-schema
+          - name: business-logic
+            ecr: mcp-agents-staging-business-logic
+            ecs: mcp-agents-staging-business-logic
+          - name: api-endpoints
+            ecr: mcp-agents-staging-api-endpoints
+            ecs: mcp-agents-staging-api-endpoints
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker 빌드 & ECR 푸시 (${{ matrix.service.name }})
+        run: |
+          IMAGE=${{ env.ECR_BASE }}/${{ matrix.service.ecr }}:latest
+          docker build --platform linux/amd64 \
+            -t $IMAGE \
+            ./mcp-servers/${{ matrix.service.name }}
+          docker push $IMAGE
+
+      - name: ECS 재배포 (${{ matrix.service.name }})
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ matrix.service.ecs }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}

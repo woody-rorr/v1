@@ -20,6 +20,13 @@
       "headers": {
         "x-user-id": "woody@rorr.club"
       }
+    },
+    "api-server": {
+      "type": "http",
+      "url": "http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com/mcp",
+      "headers": {
+        "x-user-id": "woody@rorr.club"
+      }
     }
   }
 }

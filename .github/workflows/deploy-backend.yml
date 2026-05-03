@@ -16,8 +16,8 @@ env:
   ECS_CLUSTER: mcp-agents-staging-cluster
 
 jobs:
-  deploy-user-service:
-    name: user-service 배포
+  deploy-api-server:
+    name: api-server 배포
     runs-on: ubuntu-latest
 
     steps:
@@ -35,16 +35,16 @@ jobs:
 
       - name: Docker 빌드 & ECR 푸시
         run: |
-          IMAGE=${{ env.ECR_BASE }}/mcp-agents-staging-user-service:latest
+          IMAGE=${{ env.ECR_BASE }}/mcp-agents-staging-api-server:latest
           docker build --platform linux/amd64 \
             -t $IMAGE \
-            ./backend/user-service
+            ./backend/api-server
           docker push $IMAGE
 
       - name: ECS 재배포
         run: |
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
-            --service mcp-agents-staging-user-service \
+            --service mcp-agents-staging-api-server \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}

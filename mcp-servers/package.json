@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "test": "node test-orchestration.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}
