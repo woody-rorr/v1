@@ -12,7 +12,7 @@ export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 50, unique: true })
+  @Column({ type: 'varchar', length: 50 })
   username!: string;
 
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })

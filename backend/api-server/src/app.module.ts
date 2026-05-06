@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import { Controller, Get } from '@nestjs/common';
 
 @Controller()
@@ -20,6 +21,7 @@ class HealthController {
       synchronize: false,
     }),
     AuthModule,
+    UsersModule,
   ],
   controllers: [HealthController],
 })
