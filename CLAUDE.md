@@ -50,6 +50,12 @@ DATABASE_URL=... JWT_ACCESS_SECRET=... JWT_REFRESH_SECRET=... npm run start:dev
 - 재시작 후에도 안 되면 → CloudWatch 로그 확인: `/aws-cloudwatch-rorr 최근 에러 보여줘`
 - Health 체크: `curl http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com/health`
 
+## TypeScript 설정 주의사항 (tsconfig.json)
+- `outDir`, `baseUrl` 등 경로 설정은 **절대 임의로 수정 금지**
+- 현재 설정: `"outDir": "./dist"`, `"baseUrl": "./"`
+- 변경 시 빌드 경로 꼬임 → ECS 배포 실패로 이어질 수 있음
+- NestJS 코드 생성 시 tsconfig.json은 건드리지 말 것
+
 ## MCP 서버 설정 보존 규칙
 - `.mcp.json` 파일은 절대 삭제하거나 덮어쓰지 말 것
 - MCP 서버 추가 시 기존 항목을 유지한 채 병합할 것
