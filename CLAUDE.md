@@ -27,6 +27,7 @@ DATABASE_URL=... JWT_ACCESS_SECRET=... JWT_REFRESH_SECRET=... npm run start:dev
 | 명령어 | 설명 | 예시 |
 |--------|------|------|
 | `/build-feature` | DB·API·비즈니스 로직 동시 설계 후 NestJS 파일 생성 | `/build-feature 결제 기능` |
+| `/rorr-review` | 변경 코드 리뷰 + PR 설명 초안 작성 | `/rorr-review` |
 | `/aws-ecs-rorr` | ECS 서비스 상태 확인 및 재시작 | `/aws-ecs-rorr 전체 상태 확인해줘` |
 | `/aws-cloudwatch-rorr` | CloudWatch 로그 조회 및 에러 분석 | `/aws-cloudwatch-rorr 최근 에러 보여줘` |
 
@@ -42,6 +43,12 @@ DATABASE_URL=... JWT_ACCESS_SECRET=... JWT_REFRESH_SECRET=... npm run start:dev
 - URL: `http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com`
 - Swagger: `http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com/api`
 - Health: `http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com/health`
+
+## MCP 서버 장애 대응
+- `/build-feature` 실행 중 MCP 툴 오류 발생 시 → ECS 상태 먼저 확인: `/aws-ecs-rorr 전체 상태 확인해줘`
+- ECS 태스크가 0이면 → `/aws-ecs-rorr db-schema 재시작해줘` (해당 서비스명으로)
+- 재시작 후에도 안 되면 → CloudWatch 로그 확인: `/aws-cloudwatch-rorr 최근 에러 보여줘`
+- Health 체크: `curl http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com/health`
 
 ## MCP 서버 설정 보존 규칙
 - `.mcp.json` 파일은 절대 삭제하거나 덮어쓰지 말 것
