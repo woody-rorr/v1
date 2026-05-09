@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Request } from 'express';
 
 import { AUTH_SERVICE, IAuthService } from './auth.service.interface';
@@ -37,6 +42,8 @@ export class AuthController {
   ) {}
 
   @ApiOperation({ summary: '회원가입' })
+  @ApiResponse({ status: 201, description: '회원가입 성공' })
+  @ApiResponse({ status: 409, description: '이미 사용 중인 이메일' })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto): Promise<UserProfileResult> {
@@ -44,6 +51,8 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: '로그인' })
+  @ApiResponse({ status: 200, description: '로그인 성공, 토큰 반환' })
+  @ApiResponse({ status: 401, description: '잘못된 자격증명' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -55,7 +64,9 @@ export class AuthController {
     return this.authService.login(dto, ip, userAgent);
   }
 
-  @ApiOperation({ summary: 'Access Token 재발급' })
+  @ApiOperation({ summary: '토큰 갱신' })
+  @ApiResponse({ status: 200, description: '새 토큰 쌍 반환' })
+  @ApiResponse({ status: 401, description: '유효하지 않은 Refresh Token' })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -69,6 +80,7 @@ export class AuthController {
 
   @ApiOperation({ summary: '로그아웃' })
   @ApiBearerAuth()
+  @ApiResponse({ status: 204, description: '로그아웃 성공' })
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AuthGuard('jwt'))
@@ -79,8 +91,9 @@ export class AuthController {
     return this.authService.logout(dto, req.user.userId);
   }
 
-  @ApiOperation({ summary: '내 프로필 조회' })
+  @ApiOperation({ summary: '내 정보 조회' })
   @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: '유저 정보 반환' })
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthGuard('jwt'))

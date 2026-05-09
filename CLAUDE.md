@@ -39,6 +39,32 @@ DATABASE_URL=... JWT_ACCESS_SECRET=... JWT_REFRESH_SECRET=... npm run start:dev
 | `business-logic` | 5002 | 서비스 레이어 설계, 검증 규칙, 트랜잭션 경계 |
 | `api-endpoints` | 5003 | RESTful 엔드포인트 설계, 요청/응답 스펙 |
 
+## 핵심 규칙 — implement_and_pr
+
+**코드 구현 요청은 반드시 아래 기준으로 MCP 툴을 호출하세요.**
+로컬 파일을 직접 수정하지 마세요. 항상 해당 MCP 툴을 통해 PR을 생성하세요.
+
+### 어떤 툴을 쓸지 판단 기준
+
+| 요청 내용 | 호출할 툴 |
+|-----------|-----------|
+| 테이블 추가/수정, 마이그레이션, TypeORM 엔티티 | `mcp__db-schema__implement_and_pr` |
+| 서비스 로직, 비즈니스 규칙, 트랜잭션 처리 | `mcp__business-logic__implement_and_pr` |
+| 컨트롤러, API 엔드포인트, DTO, Guard | `mcp__api-endpoints__implement_and_pr` |
+| 기능 전체 (DB + 서비스 + API 모두 필요) | 3개 툴 동시 호출 |
+
+### 동시 호출 예시
+
+"로그인 기능 만들어줘" → 아래 3개를 **동시에** 호출:
+- `mcp__db-schema__implement_and_pr` — users, refresh_tokens 테이블
+- `mcp__business-logic__implement_and_pr` — auth.service.ts
+- `mcp__api-endpoints__implement_and_pr` — auth.controller.ts
+
+### 주의사항
+- `prompt` 파라미터에 요청 내용을 구체적으로 전달할수록 품질이 높아집니다
+- 각 툴은 독립적으로 레포를 clone하므로 서로 충돌하지 않습니다
+- PR 생성 후 반드시 리뷰 후 머지하세요
+
 ## API 서버
 - URL: `http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com`
 - Swagger: `http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com/api`
