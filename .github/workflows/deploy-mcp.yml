@@ -31,9 +31,6 @@ jobs:
           - name: api-endpoints
             ecr: mcp-agents-staging-api-endpoints
             ecs: mcp-agents-staging-api-endpoints
-          - name: infra
-            ecr: mcp-agents-staging-infra
-            ecs: mcp-agents-staging-infra
 
     steps:
       - name: 코드 체크아웃

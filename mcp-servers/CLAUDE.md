@@ -53,3 +53,4 @@ RDS_URL=postgresql://... node db-schema/index.js
 - `deploy-fargate.sh` 실행 전 Docker 데스크탑 실행 확인
 - ECS 재배포 후 약 1-2분 대기
 - CloudWatch 로그: `/ecs/mcp-agents-staging`
+# 2026-05-09T06:26:17Z
