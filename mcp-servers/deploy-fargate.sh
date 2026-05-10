@@ -35,6 +35,8 @@ build_and_push() {
 build_and_push "db-schema"
 build_and_push "business-logic"
 build_and_push "api-endpoints"
+build_and_push "infra-mcp"
+build_and_push "frontend-mcp"
 
 echo ""
 echo "=== 배포 완료 ==="

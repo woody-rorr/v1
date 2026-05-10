@@ -1,19 +1,42 @@
-import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from "express";
 import { z } from "zod";
 import pg from "pg";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { runCodingAgent, parseSummary } from "./agent.js";
+import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 
-const execAsync = promisify(exec);
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.RDS_URL });
+const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION ?? "us-east-1" });
+
+const HAIKU_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+
+async function callClaude(systemPrompt, userMessage, maxTokens = 8000) {
+  const body = {
+    anthropic_version: "bedrock-2023-05-31",
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userMessage }],
+  };
+  const command = new InvokeModelCommand({
+    modelId: HAIKU_MODEL,
+    contentType: "application/json",
+    accept: "application/json",
+    body: JSON.stringify(body),
+  });
+  const response = await bedrock.send(command);
+  const result = JSON.parse(new TextDecoder().decode(response.body));
+  return result.content.filter(b => b.type === "text").map(b => b.text).join("\n");
+}
+
+const SYSTEM_PROMPT = `당신은 PostgreSQL 및 NestJS TypeORM 전문 DB 설계 에이전트입니다.
+기능 요구사항과 현재 테이블 목록을 받아 최적의 DB 스키마를 설계하고,
+TypeORM 엔티티와 CREATE TABLE DDL을 생성합니다.
+- TypeScript strict mode 준수
+- snake_case 컬럼명 사용
+- 필요한 인덱스 명시
+- 외래키 관계 명확히 정의
+- 응답은 한국어로 작성`;
 
 await pool.query(`
   CREATE TABLE IF NOT EXISTS mcp_logs (
@@ -32,35 +55,6 @@ await pool.query(`
 const app = express();
 app.use(express.json());
 
-function parseRepoUrl(url) {
-  const match = url.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  if (!match) throw new Error(`Cannot parse GitHub repo URL: ${url}`);
-  return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
-}
-
-function slugify(text) {
-  const slug = text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 40);
-  return slug || Math.random().toString(36).slice(2, 8);
-}
-
-function extractTitle(summary) {
-  for (const line of summary.split("\n").map((l) => l.trim()).filter(Boolean)) {
-    const clean = line.replace(/^[#*\->]+\s*/, "").replace(/\*\*/g, "").replace(/`/g, "");
-    if (clean.length > 5) return clean.slice(0, 72);
-  }
-  return summary.slice(0, 72);
-}
-
-async function hasChanges(workDir) {
-  const { stdout } = await execAsync("git status --porcelain", { cwd: workDir });
-  return stdout.trim().length > 0;
-}
-
 async function saveLog({ sessionId, userId, tool, input, result, success, durationMs }) {
   await pool.query(
     `INSERT INTO mcp_logs (session_id, user_id, tool, input, result, success, duration_ms)
@@ -71,102 +65,6 @@ async function saveLog({ sessionId, userId, tool, input, result, success, durati
 
 function createServer(userId, sessionId) {
   const server = new McpServer({ name: "db-schema", version: "1.0.0" });
-
-  server.tool(
-    "implement_and_pr",
-    "프롬프트를 받아 GitHub 저장소 코드를 자동으로 수정하고 PR을 생성합니다",
-    {
-      prompt: z.string().describe("구현할 기능 또는 수정 사항 설명"),
-    },
-    async ({ prompt }, extra) => {
-      const sendLog = async (msg) => {
-        process.stderr.write(`[db-schema] ${msg}\n`);
-        try {
-          await extra.sendNotification({
-            method: "notifications/message",
-            params: { level: "info", logger: "db-schema", data: msg },
-          });
-        } catch {}
-      };
-
-      const repo_url = process.env.GITHUB_REPO_URL;
-      const base_branch = process.env.BASE_BRANCH || "main";
-      const token = process.env.GITHUB_TOKEN;
-      if (!token) return { content: [{ type: "text", text: "Error: GITHUB_TOKEN이 설정되지 않았습니다." }] };
-      if (!repo_url) return { content: [{ type: "text", text: "Error: GITHUB_REPO_URL이 설정되지 않았습니다." }] };
-
-      const { owner, repo } = parseRepoUrl(repo_url);
-      const authedUrl = `https://${token}@github.com/${owner}/${repo}.git`;
-
-      const now = new Date();
-      const datePart = now.toISOString().slice(0, 16).replace(/[-T:]/g, "").slice(0, 12);
-      const branchName = `agent/db/${datePart}-${slugify(prompt)}`;
-
-      const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "db-schema-agent-"));
-      const start = Date.now();
-
-      try {
-        await sendLog(`📦 저장소 클론 중... (${owner}/${repo}@${base_branch})`);
-        await execAsync(`git clone --depth=1 --branch ${base_branch} ${authedUrl} .`, { cwd: tmpDir });
-        await execAsync('git config user.email "agent@rorr.club"', { cwd: tmpDir });
-        await execAsync('git config user.name "db-schema-agent"', { cwd: tmpDir });
-
-        await sendLog(`🌿 브랜치 생성: ${branchName}`);
-        await execAsync(`git checkout -b ${branchName}`, { cwd: tmpDir });
-
-        await sendLog(`🤖 Claude 에이전트 실행 중... (프롬프트: "${prompt.slice(0, 60)}")`);
-        const raw = await runCodingAgent(prompt, tmpDir, sendLog);
-        const { title: agentTitle, summary } = parseSummary(raw);
-        await sendLog("✅ Claude 에이전트 완료");
-
-        if (!(await hasChanges(tmpDir))) {
-          await saveLog({ sessionId, userId, tool: "implement_and_pr", input: { prompt }, result: summary, success: true, durationMs: Date.now() - start });
-          return { content: [{ type: "text", text: `에이전트가 실행됐지만 변경된 파일이 없습니다.\n\n${summary}` }] };
-        }
-
-        await sendLog("💾 변경사항 커밋 & 푸시 중...");
-        await execAsync("git add -A", { cwd: tmpDir });
-        await execAsync(
-          `git commit -m "feat: ${prompt.slice(0, 60).replace(/"/g, "'")}\n\nGenerated by db-schema-agent"`,
-          { cwd: tmpDir }
-        );
-        await execAsync(`git push origin ${branchName}`, { cwd: tmpDir });
-
-        await sendLog("🔗 PR 생성 중...");
-        const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/vnd.github.v3+json",
-          },
-          body: JSON.stringify({
-            title: agentTitle || extractTitle(summary),
-            body: `## Summary\n\n${summary}\n\n---\n*🤖 Generated by db-schema-agent*`,
-            head: branchName,
-            base: base_branch,
-          }),
-        });
-
-        const pr = await prRes.json();
-        if (!prRes.ok) throw new Error(`GitHub API error: ${JSON.stringify(pr)}`);
-
-        await sendLog(`🎉 PR 생성 완료! ${pr.html_url}`);
-        await saveLog({ sessionId, userId, tool: "implement_and_pr", input: { prompt }, result: pr.html_url, success: true, durationMs: Date.now() - start });
-        return {
-          content: [{
-            type: "text",
-            text: `✅ PR 생성 완료!\n\nURL: ${pr.html_url}\n브랜치: ${branchName}\n\n## 변경 내용\n${summary}`,
-          }],
-        };
-      } catch (e) {
-        await saveLog({ sessionId, userId, tool: "implement_and_pr", input: { prompt }, result: e.message, success: false, durationMs: Date.now() - start });
-        throw e;
-      } finally {
-        await fs.rm(tmpDir, { recursive: true, force: true });
-      }
-    }
-  );
 
   server.tool(
     "design_schema",
@@ -180,7 +78,13 @@ function createServer(userId, sessionId) {
           WHERE table_schema = 'public' ORDER BY table_name
         `);
         const tables = res.rows.map(r => r.table_name).join(", ") || "테이블 없음";
-        const result = `기능: "${feature}"\n현재 테이블 목록: ${tables}`;
+
+        const result = await callClaude(
+          SYSTEM_PROMPT,
+          `기능 요구사항: ${feature}\n\n현재 DB 테이블 목록: ${tables}\n\n필요한 테이블 구조, 컬럼, 인덱스, 관계를 설계해주세요.`,
+          8000
+        );
+
         await saveLog({ sessionId, userId, tool: "design_schema", input: { feature }, result, success: true, durationMs: Date.now() - start });
         return { content: [{ type: "text", text: result }] };
       } catch (e) {
@@ -196,9 +100,19 @@ function createServer(userId, sessionId) {
     { tables: z.string().describe("테이블명과 컬럼 정보") },
     async ({ tables }) => {
       const start = Date.now();
-      const result = `DDL 생성 대상:\n${tables}`;
-      await saveLog({ sessionId, userId, tool: "generate_ddl", input: { tables }, result, success: true, durationMs: Date.now() - start });
-      return { content: [{ type: "text", text: result }] };
+      try {
+        const result = await callClaude(
+          SYSTEM_PROMPT,
+          `아래 테이블 설계를 기반으로 PostgreSQL CREATE TABLE DDL을 작성해주세요.\n인덱스, 외래키 제약조건 포함.\n\n${tables}`,
+          6000
+        );
+
+        await saveLog({ sessionId, userId, tool: "generate_ddl", input: { tables }, result, success: true, durationMs: Date.now() - start });
+        return { content: [{ type: "text", text: result }] };
+      } catch (e) {
+        await saveLog({ sessionId, userId, tool: "generate_ddl", input: { tables }, result: e.message, success: false, durationMs: Date.now() - start });
+        throw e;
+      }
     }
   );
 
@@ -241,6 +155,7 @@ function createServer(userId, sessionId) {
 app.post("/mcp", async (req, res) => {
   const userId = req.headers['x-user-id'] || 'unknown';
   const sessionId = req.headers['x-session-id'] || crypto.randomUUID();
+
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const server = createServer(userId, sessionId);
   await server.connect(transport);
@@ -256,7 +171,8 @@ app.post("/log", async (req, res) => {
   try {
     process.stdout.write(JSON.stringify({ event: "prompt", user_id: userId, mcp_server, prompt_content }) + "\n");
     await pool.query(
-      `INSERT INTO mcp_logs (user_id, tool, input, success) VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO mcp_logs (user_id, tool, input, success)
+       VALUES ($1, $2, $3, $4)`,
       [userId, mcp_server, JSON.stringify({ prompt_content }), status_code < 400]
     );
     res.json({ ok: true });

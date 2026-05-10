@@ -31,6 +31,18 @@ jobs:
           - name: api-endpoints
             ecr: mcp-agents-staging-api-endpoints
             ecs: mcp-agents-staging-api-endpoints
+          - name: infra
+            ecr: mcp-agents-staging-infra
+            ecs: mcp-agents-staging-infra
+          - name: infra-mcp
+            ecr: mcp-agents-staging-infra-mcp
+            ecs: mcp-agents-staging-infra-mcp
+          - name: frontend-mcp
+            ecr: mcp-agents-staging-frontend-mcp
+            ecs: mcp-agents-staging-frontend-mcp
+          - name: orchestrator
+            ecr: mcp-agents-staging-orchestrator
+            ecs: mcp-agents-staging-orchestrator
 
     steps:
       - name: 코드 체크아웃
