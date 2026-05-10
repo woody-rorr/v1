@@ -6,7 +6,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedroc
 
 const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION ?? "us-east-1" });
 
-const HAIKU_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+const HAIKU_MODEL = "anthropic.claude-haiku-4-5-20251001-v1:0";
 
 async function callClaude(systemPrompt, userMessage, maxTokens = 8000) {
   const body = {
