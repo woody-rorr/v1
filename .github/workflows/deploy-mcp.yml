@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'mcp-servers/**'
+      - '.github/workflows/deploy-mcp.yml'
+  workflow_dispatch:
 
 permissions:
   id-token: write
