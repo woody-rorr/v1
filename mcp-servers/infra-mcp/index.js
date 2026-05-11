@@ -310,4 +310,4 @@ app.post("/mcp", async (req, res) => {
 
 app.get("/health", (_, res) => res.json({ status: "ok", server: "infra-mcp" }));
 
-app.listen(5004, () => process.stdout.write("infra-mcp MCP server running on :5004" + "\n");
+app.listen(5005, () => process.stdout.write("infra-mcp MCP server running on :5005" + "\n");
