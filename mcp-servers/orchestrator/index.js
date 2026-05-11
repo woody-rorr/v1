@@ -29,7 +29,7 @@ const GITHUB_BACKEND_REPO = process.env.GITHUB_BACKEND_REPO ?? "";
 
 // ── Bedrock 클라이언트 ────────────────────────────────────────────────────────
 const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION ?? "us-east-1" });
-const SONNET_MODEL = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+const SONNET_MODEL = "us.anthropic.claude-sonnet-4-6";
 
 // ── 라우팅 분석 시스템 프롬프트 ──────────────────────────────────────────────
 const ROUTER_SYSTEM_PROMPT = `당신은 개발 요청을 분류하는 라우터입니다.
