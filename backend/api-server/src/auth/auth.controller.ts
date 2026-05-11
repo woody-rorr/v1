@@ -51,8 +51,33 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: '로그인' })
-  @ApiResponse({ status: 200, description: '로그인 성공, 토큰 반환' })
-  @ApiResponse({ status: 401, description: '잘못된 자격증명' })
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공 — accessToken, refreshToken, user(id, email) 반환',
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        accessTokenExpiresAt: 1715000100,
+        refreshTokenExpiresAt: 1715604900,
+        user: {
+          id: 'uuid-v4-string',
+          email: 'woody@rorr.club',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: '잘못된 이메일 또는 비밀번호 — UnauthorizedException',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: '이메일 또는 패스워드가 올바르지 않습니다.',
+        error: 'Unauthorized',
+      },
+    },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
