@@ -460,6 +460,10 @@ export class AuthService implements IAuthService {
       refreshToken,
       accessTokenExpiresAt: now + AT_TTL_SECONDS,
       refreshTokenExpiresAt: now + RT_TTL_SECONDS,
+      user: {
+        id: userId,
+        email,
+      },
     };
   }
 
