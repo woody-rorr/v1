@@ -125,7 +125,9 @@ async function analyzeRouting(feature) {
   }
 
   try {
-    return JSON.parse(textBlock.text);
+    // 마크다운 코드 블록 제거 후 파싱
+    const cleaned = textBlock.text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    return JSON.parse(cleaned);
   } catch {
     throw new Error(`LLM 라우팅 분석: JSON 파싱 실패 — ${textBlock.text}`);
   }
